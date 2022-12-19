@@ -2,3 +2,5 @@ pip
 numpy
 tensorflow
 opencv-python
+matplotlib
+scikit-learn
