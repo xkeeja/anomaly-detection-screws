@@ -1,3 +1,4 @@
 pip
 numpy
 tensorflow
+opencv-python
