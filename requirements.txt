@@ -1,6 +1,9 @@
 pip
 numpy
-tensorflow
 opencv-python
 matplotlib
 scikit-learn
+tensorflow
+tensorflow-probability
+tensorflow-addons
+gdown
