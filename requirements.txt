@@ -1,8 +1,7 @@
 pip
+ipykernel
 numpy
-opencv-python
 matplotlib
-scikit-learn
 tensorflow
 tensorflow-probability
 tensorflow-addons
