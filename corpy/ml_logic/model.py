@@ -11,8 +11,10 @@ from tensorflow.keras import metrics
 import tensorflow as tf
 import numpy as np
 
+
 def create_encoder(image_size, latent_dim):
     inputs = Input(shape=(image_size, image_size, 3))
+
     x = Conv2D(64, 3, activation="relu", strides=2, padding="same")(inputs)
     x = BatchNormalization()(x)
     x = Conv2D(32, 3, activation="relu", strides=2, padding="same")(x)
@@ -27,8 +29,10 @@ def create_encoder(image_size, latent_dim):
 
     return encoder, pre_flatten_shape
 
+
 def create_decoder(pre_flatten_shape, latent_dim):
     inputs = Input(shape=(latent_dim,))
+
     x = Dense(np.prod(pre_flatten_shape[1:]))(inputs)
     x = Reshape((pre_flatten_shape[1], pre_flatten_shape[2], pre_flatten_shape[3]))(x)
     x = Conv2DTranspose(64, 3, activation="relu", strides=2, padding="same")(x)
@@ -44,83 +48,39 @@ def create_decoder(pre_flatten_shape, latent_dim):
     return decoder
 
 
-class AE_mse(Model):
-    def __init__(self, encoder, decoder, **kwargs):
-        super().__init__(**kwargs)
+class AutoEncoder(Model):
+    def __init__(self, encoder, decoder, * args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.encoder = encoder
         self.decoder = decoder
-        self.total_loss_tracker = metrics.Mean(name="total_loss")
-        self.reconstruction_loss_tracker = metrics.Mean(
-            name="reconstruction_loss"
-        )
-
-    def call(self,x):
-        z = self.encoder(x)
-        reconstruction = self.decoder(z)
-        return z, reconstruction
-
-    @property
-    def metrics(self):
-        return [
-            self.total_loss_tracker,
-            self.reconstruction_loss_tracker
-        ]
+        self.loss_tracker = metrics.Mean(name="loss")
+        self.r_loss_tracker = metrics.Mean(name="reconstruction_loss")
 
     def train_step(self, data):
         with tf.GradientTape() as tape:
-            z = self.encoder(data)
-            reconstruction = self.decoder(z)
+            reconstruction = self.decoder(self.encoder(data))
             reconstruction_loss = tf.keras.losses.mean_squared_error(data, reconstruction)
+            loss = reconstruction_loss
 
-            total_loss = reconstruction_loss
-        grads = tape.gradient(total_loss, self.trainable_weights)
-        self.optimizer.apply_gradients(zip(grads, self.trainable_weights))
-        self.total_loss_tracker.update_state(total_loss)
-        self.reconstruction_loss_tracker.update_state(reconstruction_loss)
+        gradients = tape.gradient(loss, self.trainable_weights)
+
+        self.optimizer.apply_gradients(zip(gradients, self.trainable_weights))
+
+        self.loss_tracker.update_state(loss)
+        self.r_loss_tracker.update_state(reconstruction_loss)
+
         return {
-            "loss": self.total_loss_tracker.result(),
-            "reconstruction_loss": self.reconstruction_loss_tracker.result(),
+            "loss": self.loss_tracker.result(),
+            "reconstruction_loss": self.r_loss_tracker.result(),
         }
-
-
-class AE_bce(Model):
-    def __init__(self, encoder, decoder, **kwargs):
-        super().__init__(**kwargs)
-        self.encoder = encoder
-        self.decoder = decoder
-        self.total_loss_tracker = metrics.Mean(name="total_loss")
-        self.reconstruction_loss_tracker = metrics.Mean(
-            name="reconstruction_loss"
-        )
-
-    def call(self,x):
-        z = self.encoder(x)
-        reconstruction = self.decoder(z)
-        return z, reconstruction
 
     @property
     def metrics(self):
         return [
-            self.total_loss_tracker,
-            self.reconstruction_loss_tracker
+            self.loss_tracker,
+            self.r_loss_tracker
         ]
 
-    def train_step(self, data):
-        with tf.GradientTape() as tape:
-            z = self.encoder(data)
-            reconstruction = self.decoder(z)
-            reconstruction_loss = tf.reduce_mean(
-                tf.reduce_sum(
-                    tf.keras.losses.binary_crossentropy(data, reconstruction), axis=(1, 2)
-                )
-            )
-
-            total_loss = reconstruction_loss
-        grads = tape.gradient(total_loss, self.trainable_weights)
-        self.optimizer.apply_gradients(zip(grads, self.trainable_weights))
-        self.total_loss_tracker.update_state(total_loss)
-        self.reconstruction_loss_tracker.update_state(reconstruction_loss)
-        return {
-            "loss": self.total_loss_tracker.result(),
-            "reconstruction_loss": self.reconstruction_loss_tracker.result(),
-        }
+    def call(self, input):
+        reconstruction = self.decoder(self.encoder(input))
+        return reconstruction
