@@ -1,25 +1,44 @@
+import numpy as np
 import tensorflow as tf
 import tensorflow_addons as tfa
 from tensorflow.keras.preprocessing import image_dataset_from_directory
 
-
-def convert_to_float(image):
+# convert image dtypes to float
+def to_float(image):
     image = tf.image.convert_image_dtype(image, dtype=tf.float32)
     return image
 
+# rotate images 10 degrees clockwise
+def transform_rotate_cw(img):
+    return tfa.image.rotate(
+        img,
+        -tf.constant(np.pi/18),
+        fill_mode="reflect",
+        interpolation="bilinear"
+        )
 
-def trans1(img):
-    return tfa.image.rotate(tf.image.flip_left_right(tf.image.flip_up_down(img)),-.2,fill_mode="reflect",interpolation="bilinear")
+# rotate images 10 degrees counterclockwise
+def transform_rotate_ccw(img):
+    return tfa.image.rotate(
+        img,
+        tf.constant(np.pi/18),
+        fill_mode="reflect",
+        interpolation="bilinear"
+        )
+
+# flip & rotate images 10 degrees
+def transform_flip_rotate(img):
+    return tfa.image.rotate(
+        tf.image.flip_left_right(
+            tf.image.flip_up_down(img)
+            ),
+        tf.constant(np.pi/18),
+        fill_mode="reflect",
+        interpolation="bilinear"
+        )
 
 
-def trans2(img):
-    return tfa.image.rotate(img,-.2,fill_mode="reflect",interpolation="bilinear")
-
-
-def trans3(img):
-    return tfa.image.rotate(img,.2,fill_mode="reflect",interpolation="bilinear")
-
-
+# load data (& perform data augmentation on training set)
 def load_data(batch_size, image_size, data_type):
     types = {
         'train': 'train/good',
@@ -39,13 +58,11 @@ def load_data(batch_size, image_size, data_type):
     )
 
     if data_type == 'train':
-        ds1, dst1, dst2, dst3 = ds, ds.map(trans1), ds.map(trans2), ds.map(trans3)
-
-        ds = ds1.concatenate(dst1).concatenate(dst2).concatenate(dst3)
+        ds = ds.concatenate(ds.map(transform_rotate_cw)).concatenate(ds.map(transform_rotate_ccw)).concatenate(ds.map(transform_flip_rotate))
 
     ds = (
         ds
-        .map(convert_to_float)
+        .map(to_float)
         .cache()
         .prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
     )
