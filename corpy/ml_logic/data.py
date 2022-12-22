@@ -48,6 +48,9 @@ def load_data(batch_size, image_size, data_type):
 
     dim = (image_size, image_size)
 
+    print(f'Loading {data_type} images...')
+
+
     ds = image_dataset_from_directory(
         f'data/archive/{types[data_type]}',
         labels=None,
@@ -57,8 +60,11 @@ def load_data(batch_size, image_size, data_type):
         shuffle=True,
     )
 
+    # data augmentation of training images
     if data_type == 'train':
+        print('Data augmenting training images...')
         ds = ds.concatenate(ds.map(transform_rotate_cw)).concatenate(ds.map(transform_rotate_ccw)).concatenate(ds.map(transform_flip_rotate))
+        print(f'{sum([len(batch) for batch in list(ds)])} total train images.')
 
     ds = (
         ds
