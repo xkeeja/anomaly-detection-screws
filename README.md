@@ -19,8 +19,6 @@ In the terminal, run:
 ```
 pip list | grep corpy
 ```
-<br>
-<br>
 
 If the terminal shows the following, then setup has been successful.
 ```
