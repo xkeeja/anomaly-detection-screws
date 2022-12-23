@@ -1,6 +1,7 @@
 pip
 ipykernel
 numpy
+pandas
 matplotlib
 tensorflow
 tensorflow-probability
