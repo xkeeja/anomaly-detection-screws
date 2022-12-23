@@ -1,7 +1,7 @@
 import numpy as np
 import tensorflow as tf
 import tensorflow_addons as tfa
-from tensorflow.keras.preprocessing import image_dataset_from_directory
+from tensorflow.keras.utils import image_dataset_from_directory
 
 # convert image dtypes to float
 def to_float(image):
@@ -38,21 +38,34 @@ def transform_flip_rotate(img):
         )
 
 
-# load data (& perform data augmentation on training set)
-def load_data(batch_size, image_size, data_type):
-    types = {
-        'train': 'train/good',
-        'test': 'test',
-        'anomaly_only': 'train/not-good'
-    }
-
+def load_data(batch_size, image_size):
     dim = (image_size, image_size)
 
-    print(f'Loading {data_type} images...')
+    # load train images, split train/val, data augmentation
+    print(f'Loading train images...')
+    ds_train, ds_val = image_dataset_from_directory(
+        f'data/archive/train/good',
+        labels=None,
+        image_size=dim,
+        interpolation='nearest',
+        batch_size=batch_size,
+        validation_split=0.2,
+        subset='both',
+        shuffle=True,
+        seed=0
+    )
 
+    print('Data augmenting training images...')
+    ds_train = ds_train.concatenate(ds_train.map(transform_rotate_cw)).concatenate(ds_train.map(transform_rotate_ccw)).concatenate(ds_train.map(transform_flip_rotate))
+    print(f'{sum([len(batch) for batch in list(ds_train)])} total train images.')
 
-    ds = image_dataset_from_directory(
-        f'data/archive/{types[data_type]}',
+    ds_val = ds_val.concatenate(ds_val.map(transform_rotate_cw)).concatenate(ds_val.map(transform_rotate_ccw)).concatenate(ds_val.map(transform_flip_rotate))
+    print(f'{sum([len(batch) for batch in list(ds_val)])} total validation images.')
+
+    # load test images
+    print('Loading test images...')
+    ds_test = image_dataset_from_directory(
+        f'data/archive/test',
         labels=None,
         image_size=dim,
         interpolation='nearest',
@@ -60,17 +73,21 @@ def load_data(batch_size, image_size, data_type):
         shuffle=True,
     )
 
-    # data augmentation of training images
-    if data_type == 'train':
-        print('Data augmenting training images...')
-        ds = ds.concatenate(ds.map(transform_rotate_cw)).concatenate(ds.map(transform_rotate_ccw)).concatenate(ds.map(transform_flip_rotate))
-        print(f'{sum([len(batch) for batch in list(ds)])} total train images.')
-
-    ds = (
-        ds
-        .map(to_float)
-        .cache()
-        .prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
+    # load anomaly images (for model reconstruction)
+    print('Loading anomaly images...')
+    ds_anom = image_dataset_from_directory(
+        f'data/archive/train/not-good',
+        labels=None,
+        image_size=dim,
+        interpolation='nearest',
+        batch_size=batch_size,
+        shuffle=True,
     )
 
-    return ds
+
+    ds_train = ds_train.map(to_float).cache().prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
+    ds_val = ds_val.map(to_float).cache().prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
+    ds_test = ds_test.map(to_float).cache().prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
+    ds_anom = ds_anom.map(to_float).cache().prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
+
+    return ds_train, ds_val, ds_test, ds_anom
