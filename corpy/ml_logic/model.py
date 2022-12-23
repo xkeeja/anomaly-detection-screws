@@ -74,6 +74,15 @@ class AutoEncoder(Model):
             "reconstruction_loss": self.r_loss_tracker.result(),
         }
 
+    def test_step(self, val_data):
+        val_reconstruction = self.decoder(self.encoder(val_data))
+        val_reconstruction_loss = tf.reduce_mean(tf.keras.losses.mean_squared_error(val_data, val_reconstruction))
+        val_total_loss = val_reconstruction_loss
+
+        return {
+            "loss": val_total_loss
+        }
+
     @property
     def metrics(self):
         return [
