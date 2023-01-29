@@ -3,7 +3,7 @@ import zipfile
 import os
 
 def data_download():
-    url = "https://drive.google.com/u/0/uc?id=11ozVs6zByFjs9viD3VIIP6qKFgjZwv9E&export=download"
+    url = "https://drive.google.com/u/0/uc?id=1O0yQ-VyqSxDKXFVW96Gj15mDHA4dU4SA&export=download"
     output = "screws.zip"
     gdown.download(url, output)
 
