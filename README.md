@@ -1,6 +1,10 @@
-# Corpy&Co. AI assessment
+# Autoencoder for Anomaly Detection in MVTec Screws
 
-## Setup environment
+<p align="center"><img src="sample_output.png" align="center" width="500"></p>
+
+## Setup
+
+### Environment
 
 This notebook and package was created in `Python 3.10.6`.
 <br>
@@ -8,23 +12,30 @@ It is highly recommended to create a new virtual environment in `3.10.6` before 
 
 Run the following code in your terminal to install required libraries & dependencies:
 ```
-cd {your/file/path}/corpy-assessment
+cd {your/file/path}/anomaly-detection-screws
 make install
 ```
-where `{your/file/path}` is the location where you saved the `corpy-assessment` folder.
+where `{your/file/path}` is the location where you saved the `anomaly-detection-screws` folder.
 
-## Checking the setup
+### Checking the setup
 
 In the terminal, run:
 ```
-pip list | grep corpy
+pip list | grep MVTec
 ```
 
 If the terminal shows the following, then setup has been successful.
 ```
-corpy       0.0.1
+autoencoder-MVTec-screws       0.0.1
 ```
 
-## After setup
+## Getting Started
 
 Open `main.ipynb` to get started.
+
+
+## Next Steps
+
+1. Add L2 regularization penalty
+2. Add KL divergence for smoother latent space
+3. GAN
